@@ -1,0 +1,290 @@
+{% extends "base.html" %}
+
+{% block title %}Módulo de Planilhas Salvas - Histórico Trimestral e Mensal - AgroGestão{% endblock %}
+{% block header_title %}Planilhas Salvas & Histórico Consolidado{% endblock %}
+{% block header_subtitle %}Repositório de fechamentos trimestrais e mensais em Excel com fórmulas automáticas e zero retrabalho{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+
+    <!-- HERO BANNER: EXPORTAÇÃO IMEDIATA E NOVO FECHAMENTO -->
+    <div class="bg-gradient-to-r from-emerald-900 via-agro-dark to-slate-900 text-white rounded-3xl p-6 md:p-8 shadow-xl border border-emerald-800/80">
+        <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+            <div class="space-y-2 max-w-2xl">
+                <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                    <i class="fa-solid fa-file-excel"></i>
+                    Padrão Executivo de Planilhas Pecuárias
+                </span>
+                <h2 class="text-2xl font-black tracking-tight text-white">
+                    Histórico Oficial de Planilhas da Fazenda
+                </h2>
+                <p class="text-xs md:text-sm text-slate-300 leading-relaxed">
+                    Elimine o retrabalho de planilhas soltas. Todas as medições e ciclos de 3 meses são arquivados com fórmulas automáticas de soma e médias, cabeçalhos estilizados e rastreabilidade total.
+                </p>
+            </div>
+
+            <!-- Botões de Ação do Topo -->
+            <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full md:w-auto">
+                <!-- Exportar Dados Vivos Agora -->
+                <a href="{{ url_for('planilhas.exportar_atual') }}" class="inline-flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-5 py-3 rounded-2xl shadow-lg transition duration-150 text-xs whitespace-nowrap">
+                    <i class="fa-solid fa-cloud-arrow-down text-base"></i>
+                    <span>Exportar Dados Vivos (.xlsx)</span>
+                </a>
+
+                <!-- Abrir Modal de Consolidação Histórica -->
+                <button type="button" onclick="document.getElementById('modal_consolidacao').classList.remove('hidden')" class="inline-flex items-center justify-center gap-2 bg-white/10 hover:bg-white/20 text-white font-semibold px-4 py-3 rounded-2xl border border-white/20 transition duration-150 text-xs whitespace-nowrap">
+                    <i class="fa-solid fa-archive"></i>
+                    <span>Salvar Novo Fechamento</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Mini KPIs do Momento Atual -->
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-6 pt-6 border-t border-emerald-800/60 text-xs">
+            <div>
+                <span class="text-slate-400 block text-[11px]">Lotes Ativos no Sistema:</span>
+                <span class="text-base font-black text-white">{{ lotes_count }} lotes</span>
+            </div>
+            <div>
+                <span class="text-slate-400 block text-[11px]">Total de Cabeças Vivas:</span>
+                <span class="text-base font-black text-white">{{ total_cabecas }} cab</span>
+            </div>
+            <div>
+                <span class="text-slate-400 block text-[11px]">Peso Médio Atual:</span>
+                <span class="text-base font-bold text-emerald-300">{{ peso_medio|round(1) }} kg</span>
+            </div>
+            <div>
+                <span class="text-slate-400 block text-[11px]">Investimento Total Acumulado:</span>
+                <span class="text-base font-black text-emerald-300">{{ investimento_total|moeda }}</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- TABELA HISTÓRICA DE PLANILHAS SALVAS POR MÊS/TRIMESTRE -->
+    <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+        <div class="p-5 border-b border-slate-200 flex items-center justify-between flex-wrap gap-3">
+            <div>
+                <h3 class="font-bold text-slate-800 text-sm flex items-center gap-2">
+                    <i class="fa-solid fa-folder-closed text-emerald-700"></i>
+                    Repositório de Planilhas Consolidadas Salvas
+                </h3>
+                <p class="text-xs text-slate-500">
+                    Consulte ou baixe versões consolidadas trimestrais e mensais sem recriar dados
+                </p>
+            </div>
+
+            <span class="text-xs bg-slate-100 text-slate-700 font-bold px-3 py-1 rounded-full border border-slate-200">
+                {{ planilhas|length }} planilhas arquivadas
+            </span>
+        </div>
+
+        {% if planilhas %}
+        <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs border-collapse">
+                <thead>
+                    <tr class="bg-slate-50 text-slate-500 font-semibold uppercase tracking-wider border-b border-slate-200">
+                        <th class="py-3 px-4">Título do Fechamento</th>
+                        <th class="py-3 px-4">Período Referência</th>
+                        <th class="py-3 px-4">Tipo</th>
+                        <th class="py-3 px-4">Data da Geração</th>
+                        <th class="py-3 px-4 text-right">Lotes</th>
+                        <th class="py-3 px-4 text-right">Cabeças</th>
+                        <th class="py-3 px-4 text-right">Peso Médio</th>
+                        <th class="py-3 px-4 text-right">Ganho Médio</th>
+                        <th class="py-3 px-4 text-center">Arquivo & Ações</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100 font-medium text-slate-700">
+                    {% for p in planilhas %}
+                    <tr class="hover:bg-slate-50/80 transition">
+                        <!-- Título -->
+                        <td class="py-3.5 px-4 font-bold text-slate-900">
+                            <div class="flex items-center gap-2">
+                                <i class="fa-solid fa-file-excel text-emerald-700 text-base"></i>
+                                <span>{{ p.titulo }}</span>
+                            </div>
+                            {% if p.observacoes %}
+                            <span class="text-[10px] text-slate-400 font-normal block mt-0.5">{{ p.observacoes }}</span>
+                            {% endif %}
+                        </td>
+
+                        <!-- Período -->
+                        <td class="py-3.5 px-4 whitespace-nowrap">
+                            <span class="bg-slate-100 text-slate-800 font-bold px-2 py-0.5 rounded text-[11px] border border-slate-200">
+                                {{ p.periodo_referencia }}
+                            </span>
+                        </td>
+
+                        <!-- Tipo -->
+                        <td class="py-3.5 px-4 whitespace-nowrap">
+                            {% if p.tipo_periodo == 'Trimestral' %}
+                            <span class="bg-emerald-50 text-emerald-800 border border-emerald-200 px-2 py-0.5 rounded text-[11px] font-semibold">
+                                Trimestral (3m)
+                            </span>
+                            {% else %}
+                            <span class="bg-blue-50 text-blue-800 border border-blue-200 px-2 py-0.5 rounded text-[11px] font-semibold">
+                                Mensal
+                            </span>
+                            {% endif %}
+                        </td>
+
+                        <!-- Data de Geração -->
+                        <td class="py-3.5 px-4 whitespace-nowrap text-slate-500">
+                            {{ p.data_geracao.strftime('%d/%m/%Y às %H:%M') }}
+                        </td>
+
+                        <!-- Total Lotes -->
+                        <td class="py-3.5 px-4 text-right whitespace-nowrap">
+                            {{ p.total_lotes }}
+                        </td>
+
+                        <!-- Total Cabeças -->
+                        <td class="py-3.5 px-4 text-right font-bold text-slate-900 whitespace-nowrap">
+                            {{ p.total_cabecas }} cab
+                        </td>
+
+                        <!-- Peso Médio -->
+                        <td class="py-3.5 px-4 text-right font-semibold text-slate-800 whitespace-nowrap">
+                            {{ p.peso_medio_rebanho|peso }}
+                        </td>
+
+                        <!-- Ganho Médio -->
+                        <td class="py-3.5 px-4 text-right whitespace-nowrap text-emerald-700 font-bold">
+                            +{{ p.ganho_medio_kg|peso }}
+                        </td>
+
+                        <!-- Botão de Download e Exclusão -->
+                        <td class="py-3.5 px-4 text-center whitespace-nowrap">
+                            <div class="inline-flex items-center gap-2">
+                                <a href="{{ url_for('planilhas.download_historica', id=p.id) }}" 
+                                   title="Baixar Planilha Excel (.xlsx)"
+                                   class="inline-flex items-center gap-1.5 bg-emerald-700 hover:bg-emerald-800 text-white px-3 py-1.5 rounded-lg text-xs font-semibold shadow-sm transition">
+                                    <i class="fa-solid fa-download"></i>
+                                    <span>Baixar (.xlsx)</span>
+                                </a>
+
+                                <button type="button" 
+                                        onclick="abrirModalExclusao('form-del-plan-{{ p.id }}', '{{ p.titulo }}')"
+                                        title="Excluir Histórico"
+                                        class="p-1.5 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition">
+                                    <i class="fa-solid fa-trash-can"></i>
+                                </button>
+                                <form id="form-del-plan-{{ p.id }}" action="{{ url_for('planilhas.excluir', id=p.id) }}" method="POST" class="hidden"></form>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="p-12 text-center">
+            <div class="w-12 h-12 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center mx-auto mb-3 text-lg">
+                <i class="fa-solid fa-file-excel"></i>
+            </div>
+            <h4 class="font-bold text-slate-700 text-sm">Nenhuma planilha consolidada salva no histórico</h4>
+            <p class="text-xs text-slate-400 mt-1">Crie seu primeiro fechamento trimestral para arquivar o snapshot dos dados.</p>
+            <button type="button" onclick="document.getElementById('modal_consolidacao').classList.remove('hidden')" class="inline-flex items-center gap-2 mt-4 bg-emerald-700 hover:bg-emerald-800 text-white font-semibold px-4 py-2 rounded-xl text-xs shadow transition">
+                <i class="fa-solid fa-plus"></i>
+                <span>Salvar Primeiro Fechamento Trimestral</span>
+            </button>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- CARDS EXPLICATIVOS DO MODELO DE CONTROLE -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+        <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm space-y-2">
+            <div class="w-9 h-9 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center text-sm font-bold">
+                <i class="fa-solid fa-calculator"></i>
+            </div>
+            <h4 class="font-bold text-slate-800 text-sm">Fórmulas Nativas do Excel</h4>
+            <p class="text-xs text-slate-500 leading-relaxed">
+                As planilhas geradas já incluem fórmulas nativas (<code class="bg-slate-100 px-1 py-0.5 rounded text-emerald-800">=SOMA()</code> e <code class="bg-slate-100 px-1 py-0.5 rounded text-emerald-800">=MÉDIA()</code>) para totais de cabeças, investimentos e ganhos de carcaça.
+            </p>
+        </div>
+
+        <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm space-y-2">
+            <div class="w-9 h-9 rounded-xl bg-blue-50 text-blue-700 flex items-center justify-center text-sm font-bold">
+                <i class="fa-solid fa-layer-group"></i>
+            </div>
+            <h4 class="font-bold text-slate-800 text-sm">4 Abas Profissionais</h4>
+            <p class="text-xs text-slate-500 leading-relaxed">
+                Cada arquivo contém: 1. Resumo Executivo & KPIs, 2. Lotes e Entradas, 3. Ciclos de Manejo Trimestrais com vacinas e pesagens, e 4. Ocupação por Pasto.
+            </p>
+        </div>
+
+        <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm space-y-2">
+            <div class="w-9 h-9 rounded-xl bg-purple-50 text-purple-700 flex items-center justify-center text-sm font-bold">
+                <i class="fa-solid fa-shield-halved"></i>
+            </div>
+            <h4 class="font-bold text-slate-800 text-sm">Eliminação do Retrabalho</h4>
+            <p class="text-xs text-slate-500 leading-relaxed">
+                Ao consultar dados antigos, o usuário baixa o arquivo histórico original ou gera relatórios atualizados em 1 clique, sem precisar redigitar dados da fazenda.
+            </p>
+        </div>
+    </div>
+
+</div>
+
+<!-- MODAL DE CRIAÇÃO DE NOVO FECHAMENTO CONSOLIDADO -->
+<div id="modal_consolidacao" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-200 animate-in fade-in zoom-in duration-150">
+        <div class="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
+            <div class="flex items-center gap-2.5">
+                <div class="w-9 h-9 rounded-xl bg-emerald-100 text-emerald-800 flex items-center justify-center font-bold">
+                    <i class="fa-solid fa-box-archive"></i>
+                </div>
+                <div>
+                    <h3 class="text-base font-bold text-slate-800">Salvar Fechamento Histórico</h3>
+                    <p class="text-xs text-slate-500">Arquivar snapshot dos dados atuais em planilha Excel (.xlsx)</p>
+                </div>
+            </div>
+            <button type="button" onclick="document.getElementById('modal_consolidacao').classList.add('hidden')" class="text-slate-400 hover:text-slate-600">
+                <i class="fa-solid fa-xmark text-base"></i>
+            </button>
+        </div>
+
+        <form action="{{ url_for('planilhas.consolidar') }}" method="POST" data-loading-feedback class="space-y-4 text-xs">
+            <div>
+                <label for="titulo" class="block font-bold text-slate-700 mb-1">Título do Fechamento</label>
+                <input type="text" id="titulo" name="titulo" placeholder="Ex: Fechamento 2º Trimestre - Desempenho e Pesagens"
+                       class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-slate-50">
+            </div>
+
+            <div class="grid grid-cols-2 gap-3">
+                <div>
+                    <label for="periodo_referencia" class="block font-bold text-slate-700 mb-1">Período <span class="text-red-500">*</span></label>
+                    <input type="text" id="periodo_referencia" name="periodo_referencia" required placeholder="Ex: 2024-T2 ou Maio/2024"
+                           class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-slate-50 font-bold">
+                </div>
+
+                <div>
+                    <label for="tipo_periodo" class="block font-bold text-slate-700 mb-1">Tipo de Ciclo</label>
+                    <select id="tipo_periodo" name="tipo_periodo" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-slate-50">
+                        <option value="Trimestral">Trimestral (A cada 3 meses)</option>
+                        <option value="Mensal">Mensal</option>
+                    </select>
+                </div>
+            </div>
+
+            <div>
+                <label for="observacoes" class="block font-bold text-slate-700 mb-1">Observações do Fechamento</label>
+                <textarea id="observacoes" name="observacoes" rows="2" placeholder="Notas sobre clima, pastagem, lotação ou metas zootécnicas..."
+                          class="w-full px-3.5 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-slate-50"></textarea>
+            </div>
+
+            <div class="pt-3 flex items-center justify-end gap-3 border-t border-slate-100">
+                <button type="button" onclick="document.getElementById('modal_consolidacao').classList.add('hidden')" class="px-4 py-2 rounded-xl text-slate-600 bg-slate-100 hover:bg-slate-200 font-semibold transition">
+                    Cancelar
+                </button>
+                <button type="submit" class="px-5 py-2 bg-emerald-700 hover:bg-emerald-800 text-white font-bold rounded-xl shadow transition flex items-center gap-2">
+                    <i class="fa-solid fa-floppy-disk"></i>
+                    <span>Gerar e Arquivar Planilha</span>
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+

@@ -1,0 +1,163 @@
+{% extends "base.html" %}
+
+{% block title %}Ciclos de Manejo Trimestrais - AgroGestão{% endblock %}
+{% block header_title %}Ciclos de Manejo Trimestrais (3 em 3 Meses){% endblock %}
+{% block header_subtitle %}Histórico de pesagens periódicas, vacinas, remédios aplicados e evolução de carcaça{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+
+    <!-- BARRA DE FILTRO E REGISTRO -->
+    <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-4">
+        
+        <!-- Filtro por Lote -->
+        <form method="GET" action="{{ url_for('manejos.index') }}" class="flex items-center gap-3 w-full sm:w-auto">
+            <label for="lote_id" class="text-xs font-bold text-slate-700 whitespace-nowrap">Filtrar por Lote:</label>
+            <select id="lote_id" name="lote_id" onchange="this.form.submit()" class="text-xs py-2 px-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-slate-50">
+                <option value="">Todos os Lotes</option>
+                {% for l in lotes %}
+                <option value="{{ l.id }}" {% if lote_id_selecionado == l.id %}selected{% endif %}>
+                    {{ l.codigo }} ({{ l.pasto_atual }})
+                </option>
+                {% endfor %}
+            </select>
+            {% if lote_id_selecionado %}
+            <a href="{{ url_for('manejos.index') }}" class="text-xs text-slate-500 hover:text-slate-800">
+                Limpar
+            </a>
+            {% endif %}
+        </form>
+
+        <!-- Botão Registrar Manejo -->
+        <a href="{{ url_for('manejos.novo') }}" class="inline-flex items-center gap-2 bg-emerald-700 hover:bg-emerald-800 text-white font-semibold px-4 py-2.5 rounded-xl shadow transition text-xs whitespace-nowrap">
+            <i class="fa-solid fa-plus-circle"></i>
+            <span>Registrar Novo Manejo (3 Meses)</span>
+        </a>
+    </div>
+
+    <!-- TABELA DO HISTÓRICO DE MANEJOS -->
+    <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+        <div class="p-5 border-b border-slate-200 flex items-center justify-between">
+            <h3 class="font-bold text-slate-800 text-sm">
+                Histórico Consolidado de Manejos 
+                <span class="ml-2 text-xs bg-slate-100 text-slate-600 font-semibold px-2 py-0.5 rounded-full border">
+                    {{ manejos|length }} registros
+                </span>
+            </h3>
+            <span class="text-xs text-slate-400">Rotina de pesagem, vacinação e vermifugação</span>
+        </div>
+
+        {% if manejos %}
+        <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs border-collapse">
+                <thead>
+                    <tr class="bg-slate-50 text-slate-500 font-semibold uppercase tracking-wider border-b border-slate-200">
+                        <th class="py-3 px-4">Lote</th>
+                        <th class="py-3 px-4">Ciclo</th>
+                        <th class="py-3 px-4">Data Manejo</th>
+                        <th class="py-3 px-4 text-right">Peso Anterior</th>
+                        <th class="py-3 px-4 text-right">Peso Aferido</th>
+                        <th class="py-3 px-4 text-right">Ganho Período</th>
+                        <th class="py-3 px-4 text-right">GMD</th>
+                        <th class="py-3 px-4">Vacinas Aplicadas</th>
+                        <th class="py-3 px-4">Remédios / Vermífugos</th>
+                        <th class="py-3 px-4">Pasto Destino</th>
+                        <th class="py-3 px-4 text-center">Ações</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100 font-medium text-slate-700">
+                    {% for m in manejos %}
+                    <tr class="hover:bg-slate-50/80 transition">
+                        <!-- Lote -->
+                        <td class="py-3.5 px-4 font-bold text-slate-900 whitespace-nowrap">
+                            <a href="{{ url_for('lotes.detalhe', id=m.lote.id) }}" class="text-emerald-800 hover:underline flex items-center gap-1.5">
+                                <i class="fa-solid fa-tag text-emerald-600"></i>
+                                {{ m.lote.codigo }}
+                            </a>
+                        </td>
+
+                        <!-- Ciclo -->
+                        <td class="py-3.5 px-4 whitespace-nowrap">
+                            <span class="bg-emerald-50 text-emerald-800 border border-emerald-200 px-2 py-0.5 rounded-md font-bold text-[11px]">
+                                {{ m.ciclo_numero }}º Ciclo (3m)
+                            </span>
+                        </td>
+
+                        <!-- Data -->
+                        <td class="py-3.5 px-4 whitespace-nowrap text-slate-500">
+                            {{ m.data_manejo|data_br }}
+                        </td>
+
+                        <!-- Peso Anterior -->
+                        <td class="py-3.5 px-4 text-right whitespace-nowrap text-slate-400">
+                            {{ m.peso_anterior_kg|peso }}
+                        </td>
+
+                        <!-- Peso Aferido -->
+                        <td class="py-3.5 px-4 text-right font-black text-slate-900 whitespace-nowrap">
+                            {{ m.peso_medio_kg|peso }}
+                        </td>
+
+                        <!-- Ganho no período -->
+                        <td class="py-3.5 px-4 text-right whitespace-nowrap">
+                            <span class="text-emerald-700 font-bold">
+                                +{{ m.ganho_peso_kg|peso }}
+                            </span>
+                            <span class="text-[10px] text-slate-400 block">+{{ m.ganho_arrobas }} @</span>
+                        </td>
+
+                        <!-- GMD -->
+                        <td class="py-3.5 px-4 text-right font-bold text-slate-800 whitespace-nowrap">
+                            {{ m.gmd_kg }} kg/d
+                        </td>
+
+                        <!-- Vacinas -->
+                        <td class="py-3.5 px-4 max-w-[180px] truncate text-slate-600" title="{{ m.vacinas }}">
+                            <i class="fa-solid fa-syringe text-emerald-600 mr-1"></i>
+                            {{ m.vacinas or 'Nenhuma' }}
+                        </td>
+
+                        <!-- Remédios -->
+                        <td class="py-3.5 px-4 max-w-[180px] truncate text-slate-600" title="{{ m.remedios }}">
+                            <i class="fa-solid fa-pills text-blue-600 mr-1"></i>
+                            {{ m.remedios or 'Nenhum' }}
+                        </td>
+
+                        <!-- Pasto -->
+                        <td class="py-3.5 px-4 whitespace-nowrap">
+                            {{ m.pasto_destino }}
+                        </td>
+
+                        <!-- Ações -->
+                        <td class="py-3.5 px-4 text-center whitespace-nowrap">
+                            <button type="button" 
+                                    onclick="abrirModalExclusao('form-del-man-{{ m.id }}', 'Manejo {{ m.ciclo_numero }}º')"
+                                    title="Excluir Registro de Manejo"
+                                    class="p-1.5 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition">
+                                <i class="fa-solid fa-trash-can"></i>
+                            </button>
+                            <form id="form-del-man-{{ m.id }}" action="{{ url_for('manejos.excluir', id=m.id) }}" method="POST" class="hidden"></form>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="p-12 text-center">
+            <div class="w-12 h-12 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center mx-auto mb-3 text-lg">
+                <i class="fa-solid fa-notes-medical"></i>
+            </div>
+            <h4 class="font-bold text-slate-700 text-sm">Nenhum ciclo de manejo registrado</h4>
+            <p class="text-xs text-slate-400 mt-1">Realize a primeira repesagem e vacinação de 3 meses para acompanhar os ganhos.</p>
+            <a href="{{ url_for('manejos.novo') }}" class="inline-flex items-center gap-2 mt-4 bg-emerald-700 hover:bg-emerald-800 text-white font-semibold px-4 py-2 rounded-xl text-xs shadow transition">
+                <i class="fa-solid fa-plus"></i>
+                <span>Registrar Primeiro Ciclo</span>
+            </a>
+        </div>
+        {% endif %}
+    </div>
+
+</div>
+{% endblock %}
+

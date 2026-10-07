@@ -1,0 +1,251 @@
+{% extends "base.html" %}
+
+{% block title %}Lote {{ lote.codigo }} - AgroGestão{% endblock %}
+{% block header_title %}Ficha do Lote: {{ lote.codigo }}{% endblock %}
+{% block header_subtitle %}Origem: {{ lote.lote_origem }} | Raça: {{ lote.raca }} | Entrada: {{ lote.data_chegada|data_br }}{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+
+    <!-- BARRA DE NAVEGAÇÃO E AÇÕES -->
+    <div class="flex items-center justify-between flex-wrap gap-4">
+        <a href="{{ url_for('lotes.index') }}" class="text-xs font-semibold text-slate-500 hover:text-emerald-700 flex items-center gap-1.5 transition">
+            <i class="fa-solid fa-arrow-left"></i>
+            <span>Voltar para lista de lotes</span>
+        </a>
+
+        <div class="flex items-center gap-2">
+            <!-- Botão Registrar Manejo Trimestral -->
+            <a href="{{ url_for('manejos.novo', lote_id=lote.id) }}" class="inline-flex items-center gap-2 bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold px-4 py-2 rounded-xl shadow transition">
+                <i class="fa-solid fa-notes-medical"></i>
+                <span>+ Registrar Ciclo de 3 Meses (Pesagem & Vacinas)</span>
+            </a>
+
+            <!-- Editar -->
+            <a href="{{ url_for('lotes.editar', id=lote.id) }}" class="inline-flex items-center gap-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold px-3 py-2 rounded-xl border border-slate-200 transition">
+                <i class="fa-solid fa-pen-to-square"></i>
+                <span>Editar</span>
+            </a>
+
+            <!-- Excluir -->
+            <button type="button" onclick="abrirModalExclusao('form-del-lote', '{{ lote.codigo }}')" class="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition">
+                <i class="fa-solid fa-trash-can"></i>
+            </button>
+            <form id="form-del-lote" action="{{ url_for('lotes.excluir', id=lote.id) }}" method="POST" class="hidden"></form>
+        </div>
+    </div>
+
+    <!-- CABEÇALHO DO LOTE COM RESUMO E INDICADORES -->
+    <div class="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm">
+        <div class="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6 pb-6 border-b border-slate-100">
+            <div class="flex items-start gap-4">
+                <div class="w-14 h-14 rounded-2xl bg-emerald-100 text-emerald-800 flex items-center justify-center text-2xl font-black shadow-inner">
+                    <i class="fa-solid fa-cow"></i>
+                </div>
+                <div>
+                    <div class="flex items-center gap-3">
+                        <h2 class="text-xl font-black text-slate-900 tracking-tight">{{ lote.codigo }}</h2>
+                        <span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
+                            {{ lote.status }}
+                        </span>
+                        {% set st = lote.status_manejo %}
+                        <span class="px-2.5 py-0.5 rounded-full text-xs font-bold border {{ st.classe }}">
+                            Manejo: {{ st.status }} ({{ st.texto }})
+                        </span>
+                    </div>
+                    <p class="text-xs text-slate-500 mt-1 flex items-center gap-3 flex-wrap">
+                        <span><strong class="text-slate-700">Origem:</strong> {{ lote.lote_origem }}</span>
+                        <span>&bull;</span>
+                        <span><strong class="text-slate-700">Pasto Atual:</strong> {{ lote.pasto_atual }}</span>
+                        <span>&bull;</span>
+                        <span><strong class="text-slate-700">Dias na Fazenda:</strong> {{ lote.dias_na_fazenda }} dias</span>
+                    </p>
+                </div>
+            </div>
+
+            <!-- Previsão do Próximo Manejo -->
+            <div class="bg-slate-50 border border-slate-200 rounded-xl p-3.5 text-right w-full lg:w-auto">
+                <span class="text-[11px] font-semibold text-slate-500 block uppercase tracking-wider">Próximo Manejo Previsto</span>
+                <span class="text-base font-black text-slate-800 block">
+                    {{ lote.data_proximo_manejo|data_br }}
+                </span>
+                <span class="text-[11px] text-slate-400">Ciclo a cada 90 dias</span>
+            </div>
+        </div>
+
+        <!-- STATS DO LOTE -->
+        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 pt-6">
+            <div>
+                <span class="text-xs text-slate-500 font-medium block">Total de Cabeças:</span>
+                <span class="text-base font-black text-slate-900">{{ lote.quantidade_cabecas }} cab</span>
+            </div>
+            <div>
+                <span class="text-xs text-slate-500 font-medium block">Peso na Entrada:</span>
+                <span class="text-base font-bold text-slate-700">{{ lote.peso_chegada_medio|peso }}</span>
+            </div>
+            <div>
+                <span class="text-xs text-slate-500 font-medium block">Peso Atual Médio:</span>
+                <span class="text-base font-black text-slate-900">{{ lote.peso_atual_medio|peso }}</span>
+            </div>
+            <div>
+                <span class="text-xs text-slate-500 font-medium block">Ganho Total Acumulado:</span>
+                <span class="text-base font-black text-emerald-700">
+                    +{{ lote.ganho_peso_total_acumulado|peso }}
+                </span>
+            </div>
+            <div>
+                <span class="text-xs text-slate-500 font-medium block">GMD Acumulado:</span>
+                <span class="text-base font-bold text-slate-800">{{ lote.gmd_acumulado }} kg/dia</span>
+            </div>
+            <div>
+                <span class="text-xs text-slate-500 font-medium block">Arrobas Atuais (@):</span>
+                <span class="text-base font-black text-purple-900">{{ lote.arrobas_atuais_totais|round(1) }} @</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- LINHA DO TEMPO: CICLOS DE MANEJO TRIMESTRAIS (3 EM 3 MESES) -->
+    <div class="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm">
+        <div class="flex items-center justify-between mb-6">
+            <div>
+                <h3 class="font-bold text-slate-800 text-base flex items-center gap-2">
+                    <i class="fa-solid fa-timeline text-emerald-700"></i>
+                    Evolução Histórica e Ciclos Trimestrais de Manejo
+                </h3>
+                <p class="text-xs text-slate-500">
+                    Acompanhamento de repesagens, ganhos de peso, vacinações e medicação a cada 90 dias
+                </p>
+            </div>
+            <a href="{{ url_for('manejos.novo', lote_id=lote.id) }}" class="inline-flex items-center gap-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 text-xs font-semibold px-3 py-1.5 rounded-xl border border-emerald-200 transition">
+                <i class="fa-solid fa-plus"></i>
+                <span>Novo Manejo (3m)</span>
+            </a>
+        </div>
+
+        <div class="relative pl-6 border-l-2 border-emerald-200 space-y-8 ml-3">
+            
+            <!-- Evento 0: Chegada / Entrada -->
+            <div class="relative group">
+                <!-- Ponto na Linha do Tempo -->
+                <div class="absolute -left-[31px] top-1 w-5 h-5 rounded-full bg-slate-400 border-4 border-white shadow"></div>
+                
+                <div class="bg-slate-50 rounded-xl p-4 border border-slate-200">
+                    <div class="flex items-center justify-between flex-wrap gap-2 mb-2">
+                        <span class="text-xs font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
+                            <i class="fa-solid fa-truck-moving text-slate-600"></i>
+                            Chegada do Lote na Fazenda
+                        </span>
+                        <span class="text-xs text-slate-400">{{ lote.data_chegada|data_br }}</span>
+                    </div>
+
+                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
+                        <div>
+                            <span class="text-slate-400 block text-[11px]">Peso Inicial:</span>
+                            <span class="font-bold text-slate-800">{{ lote.peso_chegada_medio|peso }}</span>
+                        </div>
+                        <div>
+                            <span class="text-slate-400 block text-[11px]">Valor da @ Pago:</span>
+                            <span class="font-bold text-slate-800">{{ lote.valor_arroba_pago|moeda }}</span>
+                        </div>
+                        <div>
+                            <span class="text-slate-400 block text-[11px]">Pasto Inicial:</span>
+                            <span class="font-bold text-slate-800">{{ lote.pasto_atual }}</span>
+                        </div>
+                        <div>
+                            <span class="text-slate-400 block text-[11px]">Investimento Total:</span>
+                            <span class="font-bold text-emerald-800">{{ lote.valor_total_aquisicao|moeda }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Ciclos de Manejo Trimestrais -->
+            {% if lote.manejos %}
+                {% for m in lote.manejos %}
+                <div class="relative group">
+                    <!-- Ponto verde na Linha do Tempo -->
+                    <div class="absolute -left-[31px] top-1 w-5 h-5 rounded-full bg-emerald-600 border-4 border-white shadow"></div>
+
+                    <div class="bg-emerald-50/50 rounded-xl p-4 border border-emerald-200/80 hover:bg-emerald-50 transition">
+                        <div class="flex items-center justify-between flex-wrap gap-2 mb-3">
+                            <div class="flex items-center gap-2">
+                                <span class="bg-emerald-700 text-white text-[11px] font-bold px-2 py-0.5 rounded-md">
+                                    {{ m.ciclo_numero }}º Ciclo de Manejo (3 Meses)
+                                </span>
+                                <span class="text-xs font-semibold text-slate-600">{{ m.data_manejo|data_br }}</span>
+                                <span class="text-xs text-slate-400">({{ m.dias_desde_ultimo }} dias após último registro)</span>
+                            </div>
+
+                            <form action="{{ url_for('manejos.excluir', id=m.id) }}" method="POST" onsubmit="return confirm('Excluir este registro de manejo?')">
+                                <button type="submit" class="text-xs text-slate-400 hover:text-red-600 p-1">
+                                    <i class="fa-solid fa-trash-can"></i>
+                                </button>
+                            </form>
+                        </div>
+
+                        <!-- Métricas da Pesagem -->
+                        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs mb-3">
+                            <div>
+                                <span class="text-slate-500 block text-[11px]">Peso Aferido:</span>
+                                <span class="text-sm font-black text-slate-900">{{ m.peso_medio_kg|peso }}</span>
+                            </div>
+                            <div>
+                                <span class="text-slate-500 block text-[11px]">Ganho no Período:</span>
+                                <span class="text-sm font-black text-emerald-700">+{{ m.ganho_peso_kg|peso }} (+{{ m.ganho_arrobas }} @)</span>
+                            </div>
+                            <div>
+                                <span class="text-slate-500 block text-[11px]">GMD (Ganho Médio Diário):</span>
+                                <span class="text-sm font-bold text-slate-800">{{ m.gmd_kg }} kg/dia</span>
+                            </div>
+                            <div>
+                                <span class="text-slate-500 block text-[11px]">Pasto Destino:</span>
+                                <span class="text-sm font-bold text-slate-800">{{ m.pasto_destino }}</span>
+                            </div>
+                        </div>
+
+                        <!-- Sanitário (Vacinas e Remédios) -->
+                        <div class="pt-3 border-t border-emerald-100 flex flex-col sm:flex-row gap-4 text-xs">
+                            <div class="flex-1">
+                                <span class="text-slate-500 block font-semibold text-[11px] mb-0.5">
+                                    <i class="fa-solid fa-syringe text-emerald-600 mr-1"></i> Vacinas Aplicadas:
+                                </span>
+                                <p class="text-slate-700 bg-white px-2.5 py-1.5 rounded-lg border border-slate-200">
+                                    {{ m.vacinas or 'Nenhuma vacina informada' }}
+                                </p>
+                            </div>
+                            <div class="flex-1">
+                                <span class="text-slate-500 block font-semibold text-[11px] mb-0.5">
+                                    <i class="fa-solid fa-pills text-blue-600 mr-1"></i> Remédios & Suplementos:
+                                </span>
+                                <p class="text-slate-700 bg-white px-2.5 py-1.5 rounded-lg border border-slate-200">
+                                    {{ m.remedios or 'Nenhum remédio informado' }}
+                                </p>
+                            </div>
+                        </div>
+
+                        {% if m.observacoes %}
+                        <div class="mt-2 text-[11px] text-slate-500 italic">
+                            Obs: {{ m.observacoes }}
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            {% else %}
+                <div class="p-6 text-center bg-slate-50 rounded-xl border border-dashed border-slate-200">
+                    <i class="fa-solid fa-hourglass-start text-slate-400 text-xl mb-2"></i>
+                    <p class="text-xs text-slate-600 font-semibold">Nenhum ciclo trimestral de manejo registrado para este lote.</p>
+                    <p class="text-[11px] text-slate-400 mt-1">O primeiro ciclo de manejo está previsto para {{ lote.data_proximo_manejo|data_br }}.</p>
+                    <a href="{{ url_for('manejos.novo', lote_id=lote.id) }}" class="inline-flex items-center gap-1.5 mt-3 bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-semibold px-3 py-1.5 rounded-xl shadow transition">
+                        <i class="fa-solid fa-plus"></i>
+                        <span>Registrar Primeiro Ciclo Agora</span>
+                    </a>
+                </div>
+            {% endif %}
+
+        </div>
+    </div>
+
+</div>
+{% endblock %}
+

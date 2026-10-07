@@ -1,0 +1,22 @@
+# Virtual Environment
+.venv/
+venv/
+ENV/
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+
+# SQLite Database
+*.db
+*.sqlite3
+
+# Exports (optional, keep folder with gitkeep if needed)
+exports/*.xlsx
+!exports/.gitkeep
+
+# IDEs
+.vscode/
+.idea/
+

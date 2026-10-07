@@ -1,0 +1,248 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard AgroGestão - Fazenda Modelo{% endblock %}
+{% block header_title %}Painel de Desempenho Pecuário{% endblock %}
+{% block header_subtitle %}Acompanhamento do rebanho, ciclo trimestral de manejo e indicadores zootécnicos{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+
+    <!-- ALERTA DE MANEJO TRIMESTRAL (QUANDO HOUVER LOTES ATRASADOS OU PRÓXIMOS) -->
+    {% if lotes_atencao %}
+    <div class="bg-amber-50 border border-amber-300 rounded-2xl p-5 shadow-sm">
+        <div class="flex items-start justify-between flex-wrap gap-4">
+            <div class="flex items-start gap-3.5">
+                <div class="w-10 h-10 rounded-xl bg-amber-500 text-white flex items-center justify-center text-lg flex-shrink-0 shadow">
+                    <i class="fa-solid fa-bell pulse-badge"></i>
+                </div>
+                <div>
+                    <h3 class="font-bold text-amber-900 text-base">Atenção ao Ciclo de 3 Meses</h3>
+                    <p class="text-xs text-amber-800 mt-0.5">
+                        Existem <strong>{{ lotes_atencao|length }}</strong> lote(s) que necessitam de pesagem, vacinação ou medicação neste período.
+                    </p>
+                </div>
+            </div>
+            <a href="{{ url_for('manejos.novo') }}" class="inline-flex items-center gap-2 bg-amber-700 hover:bg-amber-800 text-white text-xs font-semibold px-4 py-2 rounded-xl shadow transition">
+                <i class="fa-solid fa-notes-medical"></i>
+                <span>Registrar Manejo Trimestral Agora</span>
+            </a>
+        </div>
+
+        <!-- Mini-lista de Lotes com Alerta -->
+        <div class="mt-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            {% for item in lotes_atencao %}
+            <div class="bg-white/80 rounded-xl p-3 border border-amber-200/80 flex items-center justify-between text-xs">
+                <div>
+                    <span class="font-bold text-slate-800">{{ item.lote.codigo }}</span>
+                    <p class="text-slate-500">{{ item.lote.pasto_atual }} ({{ item.lote.quantidade_cabecas }} cab)</p>
+                </div>
+                <div class="text-right">
+                    <span class="inline-block px-2 py-0.5 rounded-full text-[11px] font-bold border {{ item.status_info.classe }}">
+                        {{ item.status_info.texto }}
+                    </span>
+                    <a href="{{ url_for('manejos.novo', lote_id=item.lote.id) }}" class="block text-emerald-700 hover:underline font-semibold mt-1">
+                        Iniciar &rarr;
+                    </a>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- CARDS DE INDICADORES RÁPIDOS (KPIS) -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+        
+        <!-- KPI 1: Total de Animais -->
+        <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm card-hover flex flex-col justify-between">
+            <div class="flex items-center justify-between text-slate-500 mb-2">
+                <span class="text-xs font-semibold uppercase tracking-wider text-slate-500">Total de Animais Ativos</span>
+                <div class="w-9 h-9 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center">
+                    <i class="fa-solid fa-cow text-base"></i>
+                </div>
+            </div>
+            <div>
+                <div class="text-2xl font-black text-slate-900 tracking-tight">
+                    {{ total_cabecas }} <span class="text-sm font-semibold text-slate-500">cabeças</span>
+                </div>
+                <p class="text-xs text-slate-500 mt-1 flex items-center gap-1.5">
+                    <span class="inline-block w-2 h-2 rounded-full bg-emerald-500"></span>
+                    Distribuídos em <strong>{{ total_lotes }} lotes</strong> ativos
+                </p>
+            </div>
+        </div>
+
+        <!-- KPI 2: Peso Médio Atual -->
+        <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm card-hover flex flex-col justify-between">
+            <div class="flex items-center justify-between text-slate-500 mb-2">
+                <span class="text-xs font-semibold uppercase tracking-wider text-slate-500">Peso Médio do Rebanho</span>
+                <div class="w-9 h-9 rounded-xl bg-blue-50 text-blue-700 flex items-center justify-center">
+                    <i class="fa-solid fa-weight-scale text-base"></i>
+                </div>
+            </div>
+            <div>
+                <div class="text-2xl font-black text-slate-900 tracking-tight">
+                    {{ peso_medio|round(1) }} <span class="text-sm font-semibold text-slate-500">kg/cab</span>
+                </div>
+                <p class="text-xs text-emerald-700 font-semibold mt-1 flex items-center gap-1">
+                    <i class="fa-solid fa-arrow-trend-up"></i>
+                    Ganho médio de +{{ ganho_medio|round(1) }} kg por animal
+                </p>
+            </div>
+        </div>
+
+        <!-- KPI 3: Total em Arrobas (@) -->
+        <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm card-hover flex flex-col justify-between">
+            <div class="flex items-center justify-between text-slate-500 mb-2">
+                <span class="text-xs font-semibold uppercase tracking-wider text-slate-500">Produção de Arrobas</span>
+                <div class="w-9 h-9 rounded-xl bg-purple-50 text-purple-700 flex items-center justify-center">
+                    <i class="fa-solid fa-chart-line text-base"></i>
+                </div>
+            </div>
+            <div>
+                <div class="text-2xl font-black text-slate-900 tracking-tight">
+                    {{ total_arrobas|round(1) }} <span class="text-sm font-semibold text-slate-500">@ vivas</span>
+                </div>
+                <p class="text-xs text-slate-500 mt-1">
+                    Média de <strong>{{ (peso_medio / 30.0)|round(1) }} @</strong> por cabeça (base 30kg)
+                </p>
+            </div>
+        </div>
+
+        <!-- KPI 4: Investimento Total -->
+        <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm card-hover flex flex-col justify-between">
+            <div class="flex items-center justify-between text-slate-500 mb-2">
+                <span class="text-xs font-semibold uppercase tracking-wider text-slate-500">Investimento em Aquisição</span>
+                <div class="w-9 h-9 rounded-xl bg-amber-50 text-amber-700 flex items-center justify-center">
+                    <i class="fa-solid fa-brazilian-real-sign text-base"></i>
+                </div>
+            </div>
+            <div>
+                <div class="text-2xl font-black text-slate-900 tracking-tight text-emerald-800">
+                    {{ investimento_total|moeda }}
+                </div>
+                <p class="text-xs text-slate-500 mt-1">
+                    Custo total investido nos lotes ativos
+                </p>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- RESUMO OPERACIONAL: LOTES ATIVOS NA FAZENDA -->
+    <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+        <div class="p-5 border-b border-slate-200 flex items-center justify-between flex-wrap gap-3">
+            <div>
+                <h3 class="font-bold text-slate-800 text-sm flex items-center gap-2">
+                    <i class="fa-solid fa-layer-group text-emerald-700"></i>
+                    Visão Geral dos Lotes na Fazenda
+                </h3>
+                <p class="text-xs text-slate-500">
+                    Localização atual por pasto, pesagem vigente e acompanhamento do ciclo trimestral
+                </p>
+            </div>
+            <div class="flex items-center gap-2">
+                <a href="{{ url_for('lotes.novo') }}" class="inline-flex items-center gap-1.5 bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-semibold px-3 py-1.5 rounded-xl shadow transition">
+                    <i class="fa-solid fa-plus"></i>
+                    <span>Novo Lote</span>
+                </a>
+                <a href="{{ url_for('lotes.index') }}" class="inline-flex items-center gap-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold px-3 py-1.5 rounded-xl transition">
+                    <span>Ver Todos</span>
+                    <i class="fa-solid fa-arrow-right text-[10px]"></i>
+                </a>
+            </div>
+        </div>
+
+        {% if lotes %}
+        <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs border-collapse">
+                <thead>
+                    <tr class="bg-slate-50 text-slate-500 font-semibold uppercase tracking-wider border-b border-slate-200">
+                        <th class="py-3 px-4">Lote</th>
+                        <th class="py-3 px-4">Origem</th>
+                        <th class="py-3 px-4">Pasto / Cercado</th>
+                        <th class="py-3 px-4 text-right">Cabeças</th>
+                        <th class="py-3 px-4 text-right">Peso Entrada</th>
+                        <th class="py-3 px-4 text-right">Peso Atual</th>
+                        <th class="py-3 px-4 text-right">Ganho Acumulado</th>
+                        <th class="py-3 px-4 text-right">Arrobas (@)</th>
+                        <th class="py-3 px-4 text-center">Ciclo Trimestral</th>
+                        <th class="py-3 px-4 text-center">Ação</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100 font-medium text-slate-700">
+                    {% for lote in lotes %}
+                    {% set st = lote.status_manejo %}
+                    <tr class="hover:bg-slate-50/80 transition">
+                        <td class="py-3.5 px-4 font-bold text-slate-900 whitespace-nowrap">
+                            <a href="{{ url_for('lotes.detalhe', id=lote.id) }}" class="text-emerald-800 hover:underline flex items-center gap-1.5">
+                                <i class="fa-solid fa-tag text-emerald-600"></i>
+                                {{ lote.codigo }}
+                            </a>
+                            <span class="text-[10px] text-slate-400 font-normal block">{{ lote.raca }}</span>
+                        </td>
+                        <td class="py-3.5 px-4 max-w-[150px] truncate" title="{{ lote.lote_origem }}">
+                            {{ lote.lote_origem }}
+                        </td>
+                        <td class="py-3.5 px-4 whitespace-nowrap">
+                            <span class="inline-flex items-center gap-1.5 bg-slate-100 text-slate-700 px-2 py-0.5 rounded-lg border border-slate-200 text-[11px]">
+                                <i class="fa-solid fa-location-dot text-emerald-600"></i>
+                                {{ lote.pasto_atual }}
+                            </span>
+                        </td>
+                        <td class="py-3.5 px-4 text-right font-bold text-slate-900 whitespace-nowrap">
+                            {{ lote.quantidade_cabecas }} cab
+                        </td>
+                        <td class="py-3.5 px-4 text-right whitespace-nowrap text-slate-500">
+                            {{ lote.peso_chegada_medio|peso }}
+                        </td>
+                        <td class="py-3.5 px-4 text-right font-bold text-slate-900 whitespace-nowrap">
+                            {{ lote.peso_atual_medio|peso }}
+                        </td>
+                        <td class="py-3.5 px-4 text-right whitespace-nowrap">
+                            {% if lote.ganho_peso_total_acumulado > 0 %}
+                            <span class="text-emerald-700 font-bold">
+                                +{{ lote.ganho_peso_total_acumulado|peso }}
+                            </span>
+                            {% else %}
+                            <span class="text-slate-400">0 kg</span>
+                            {% endif %}
+                        </td>
+                        <td class="py-3.5 px-4 text-right font-bold text-emerald-900 whitespace-nowrap">
+                            {{ lote.arrobas_atuais_totais|round(1) }} @
+                        </td>
+                        <td class="py-3.5 px-4 text-center whitespace-nowrap">
+                            <span class="inline-block px-2 py-0.5 rounded-full text-[11px] font-bold border {{ st.classe }}">
+                                {{ st.status }}
+                            </span>
+                            <span class="block text-[10px] text-slate-400 mt-0.5">{{ st.texto }}</span>
+                        </td>
+                        <td class="py-3.5 px-4 text-center whitespace-nowrap">
+                            <div class="inline-flex items-center gap-1.5">
+                                <a href="{{ url_for('manejos.novo', lote_id=lote.id) }}" 
+                                   title="Registrar Manejo de 3 Meses"
+                                   class="inline-flex items-center gap-1 bg-emerald-50 hover:bg-emerald-700 hover:text-white text-emerald-800 border border-emerald-200 text-[11px] font-semibold px-2 py-1 rounded-lg transition">
+                                    <i class="fa-solid fa-notes-medical"></i>
+                                    <span>Manejo</span>
+                                </a>
+                                <a href="{{ url_for('lotes.detalhe', id=lote.id) }}" 
+                                   title="Ver Ficha Completa"
+                                   class="p-1 rounded-lg text-slate-500 hover:text-slate-800 hover:bg-slate-100 transition">
+                                    <i class="fa-solid fa-arrow-up-right-from-square"></i>
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="p-8 text-center text-slate-400 text-xs">
+            Nenhum lote ativo cadastrado no momento.
+        </div>
+        {% endif %}
+    </div>
+
+</div>
+{% endblock %}

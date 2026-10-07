@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}AgroGestão - Sistema de Gestão Pecuária{% endblock %}</title>
+    
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        agro: {
+                            50: '#f0fdf4',
+                            100: '#dcfce7',
+                            200: '#bbf7d0',
+                            300: '#86efac',
+                            400: '#4ade80',
+                            500: '#22c55e',
+                            600: '#16a34a',
+                            700: '#15803d',
+                            800: '#166534',
+                            900: '#14532d',
+                            dark: '#0e2e20',
+                            primary: '#1b4d3e',
+                            emerald: '#2d6a4f'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- Estilos Personalizados -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/custom.css') }}">
+    
+    {% block extra_head %}{% endblock %}
+</head>
+<body class="bg-slate-50 text-slate-800 antialiased min-h-screen flex flex-col md:flex-row">
+
+    <!-- SIDEBAR LATERAL (Agro-Tech) -->
+    <aside class="w-full md:w-64 bg-agro-dark text-white flex-shrink-0 flex flex-col justify-between shadow-xl z-20 min-h-screen">
+        <div>
+            <!-- Topo do Menu / Logo Fazenda -->
+            <div class="p-6 border-b border-agro-800/60 flex items-center justify-between">
+                <a href="{{ url_for('dashboard.index') }}" class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-emerald-500 to-green-400 flex items-center justify-center text-agro-dark font-black text-xl shadow-md">
+                        <i class="fa-solid fa-cow"></i>
+                    </div>
+                    <div>
+                        <h1 class="font-bold text-lg leading-tight tracking-tight text-white">AgroGestão</h1>
+                        <p class="text-xs text-emerald-400/80 font-medium">Fazenda Modelo & Pecuária</p>
+                    </div>
+                </a>
+            </div>
+
+            <!-- Botões de Ação Rápida -->
+            <div class="px-4 py-4 space-y-2">
+                <a href="{{ url_for('lotes.novo') }}" class="w-full flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold py-2.5 px-4 rounded-xl shadow transition duration-150 text-sm">
+                    <i class="fa-solid fa-plus-circle"></i>
+                    <span>Nova Entrada de Lote</span>
+                </a>
+                <a href="{{ url_for('manejos.novo') }}" class="w-full flex items-center justify-center gap-2 bg-emerald-950/70 hover:bg-emerald-900 border border-emerald-700/50 text-emerald-200 font-medium py-2 px-3 rounded-xl transition duration-150 text-xs">
+                    <i class="fa-solid fa-scale-balanced"></i>
+                    <span>Registrar Ciclo 3 Meses</span>
+                </a>
+            </div>
+
+            <!-- Navegação Principal -->
+            <nav class="px-3 py-2 space-y-1">
+                <div class="px-3 py-2 text-[11px] font-semibold tracking-wider text-emerald-300/60 uppercase">
+                    Módulos Operacionais
+                </div>
+
+                <!-- Dashboard -->
+                <a href="{{ url_for('dashboard.index') }}" 
+                   class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition duration-150 {{ 'bg-emerald-700/50 text-white font-semibold shadow-sm' if request.endpoint == 'dashboard.index' else 'text-slate-300 hover:bg-agro-800/70 hover:text-white' }}">
+                    <i class="fa-solid fa-chart-pie w-5 text-center text-emerald-400"></i>
+                    <span>Dashboard Interativa</span>
+                </a>
+
+                <!-- Controle de Lotes (CRUD) -->
+                <a href="{{ url_for('lotes.index') }}" 
+                   class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition duration-150 {{ 'bg-emerald-700/50 text-white font-semibold shadow-sm' if request.blueprint == 'lotes' else 'text-slate-300 hover:bg-agro-800/70 hover:text-white' }}">
+                    <i class="fa-solid fa-layer-group w-5 text-center text-emerald-400"></i>
+                    <span>Controle de Lotes</span>
+                </a>
+
+                <!-- Manejo Trimestral -->
+                <a href="{{ url_for('manejos.index') }}" 
+                   class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition duration-150 {{ 'bg-emerald-700/50 text-white font-semibold shadow-sm' if request.blueprint == 'manejos' else 'text-slate-300 hover:bg-agro-800/70 hover:text-white' }}">
+                    <i class="fa-solid fa-notes-medical w-5 text-center text-emerald-400"></i>
+                    <span>Ciclo Trimestral (3 Meses)</span>
+                </a>
+
+                <!-- Histórico e Planilhas Salvas -->
+                <a href="{{ url_for('planilhas.index') }}" 
+                   class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition duration-150 {{ 'bg-emerald-700/50 text-white font-semibold shadow-sm' if request.blueprint == 'planilhas' else 'text-slate-300 hover:bg-agro-800/70 hover:text-white' }}">
+                    <i class="fa-solid fa-file-excel w-5 text-center text-emerald-400"></i>
+                    <span>Planilhas Salvas & Histórico</span>
+                </a>
+            </nav>
+        </div>
+
+        <!-- Rodapé do Menu Lateral -->
+        <div class="p-4 border-t border-agro-800/60 bg-agro-dark/80">
+            <div class="bg-agro-800/50 rounded-xl p-3 border border-emerald-900/60">
+                <div class="flex items-center justify-between text-xs text-slate-300 mb-1">
+                    <span class="font-semibold text-emerald-300">Ciclo Operacional</span>
+                    <span class="text-[10px] bg-emerald-900/80 text-emerald-300 px-1.5 py-0.5 rounded border border-emerald-700/50">90 dias</span>
+                </div>
+                <p class="text-[11px] text-slate-400 leading-tight">
+                    Pesagem, vacinação e cálculo de arrobas a cada 3 meses.
+                </p>
+            </div>
+            <div class="mt-3 text-center text-[11px] text-slate-400">
+                AgroGestão v2.4 &copy; {{ ano_atual }}
+            </div>
+        </div>
+    </aside>
+
+    <!-- ÁREA PRINCIPAL DE CONTEÚDO -->
+    <div class="flex-1 flex flex-col min-w-0 overflow-y-auto">
+        
+        <!-- TOPBAR SUPERIOR -->
+        <header class="bg-white border-b border-slate-200 px-6 py-3.5 flex items-center justify-between shadow-sm sticky top-0 z-10">
+            <div class="flex items-center gap-4">
+                <div>
+                    <h2 class="text-base font-bold text-slate-800 leading-tight">
+                        {% block header_title %}Painel de Controle{% endblock %}
+                    </h2>
+                    <p class="text-xs text-slate-500">
+                        {% block header_subtitle %}Visão geral da fazenda e manejo do rebanho{% endblock %}
+                    </p>
+                </div>
+            </div>
+
+            <!-- Botões e Ações da Topbar -->
+            <div class="flex items-center gap-3">
+                <!-- Data de Hoje -->
+                <div class="hidden sm:flex items-center gap-2 bg-slate-100 text-slate-600 px-3 py-1.5 rounded-lg text-xs font-medium border border-slate-200">
+                    <i class="fa-regular fa-calendar text-emerald-700"></i>
+                    <span>{{ agora.strftime('%d/%m/%Y') }}</span>
+                </div>
+
+                <!-- Exportação Rápida para Excel -->
+                <a href="{{ url_for('planilhas.exportar_atual') }}" 
+                   title="Exportar dados consolidados em planilha Excel formatada"
+                   class="inline-flex items-center gap-2 bg-emerald-700 hover:bg-emerald-800 text-white px-3.5 py-2 rounded-xl text-xs font-semibold shadow-sm transition duration-150">
+                    <i class="fa-solid fa-file-excel"></i>
+                    <span class="hidden sm:inline">Exportar Excel (.xlsx)</span>
+                </a>
+
+                <!-- Usuário Autenticado & Sair -->
+                <div class="flex items-center gap-2 pl-2 border-l border-slate-200">
+                    <div class="flex items-center gap-2 bg-slate-50 px-2.5 py-1 rounded-xl border border-slate-200">
+                        <div class="w-7 h-7 rounded-lg bg-emerald-700 text-white flex items-center justify-center text-xs font-bold">
+                            <i class="fa-solid fa-user"></i>
+                        </div>
+                        <div class="hidden md:block text-left">
+                            <span class="block text-xs font-bold text-slate-800 leading-tight">{{ usuario_logado or 'admin.neto' }}</span>
+                            <span class="block text-[10px] text-emerald-600 font-semibold">Autorizado</span>
+                        </div>
+                    </div>
+                    <a href="{{ url_for('auth.logout') }}" 
+                       title="Sair do sistema com segurança"
+                       class="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition">
+                        <i class="fa-solid fa-right-from-bracket text-xs"></i>
+                    </a>
+                </div>
+            </div>
+        </header>
+
+        <!-- MENSAGENS FLASH (NOTIFICAÇÕES) -->
+        <main class="flex-1 p-6 md:p-8 max-w-7xl w-full mx-auto">
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    <div class="space-y-3 mb-6">
+                        {% for category, message in messages %}
+                            <div class="flex items-center justify-between p-4 rounded-xl border text-sm font-medium shadow-sm transition-all
+                                {% if category == 'success' %} bg-emerald-50 border-emerald-200 text-emerald-900
+                                {% elif category == 'danger' or category == 'error' %} bg-red-50 border-red-200 text-red-900
+                                {% elif category == 'warning' %} bg-amber-50 border-amber-200 text-amber-900
+                                {% else %} bg-sky-50 border-sky-200 text-sky-900 {% endif %}">
+                                <div class="flex items-center gap-3">
+                                    {% if category == 'success' %}
+                                        <i class="fa-solid fa-circle-check text-emerald-600 text-lg"></i>
+                                    {% elif category == 'danger' or category == 'error' %}
+                                        <i class="fa-solid fa-circle-xmark text-red-600 text-lg"></i>
+                                    {% elif category == 'warning' %}
+                                        <i class="fa-solid fa-triangle-exclamation text-amber-600 text-lg"></i>
+                                    {% else %}
+                                        <i class="fa-solid fa-circle-info text-sky-600 text-lg"></i>
+                                    {% endif %}
+                                    <span>{{ message }}</span>
+                                </div>
+                                <button type="button" onclick="this.parentElement.remove()" class="text-slate-400 hover:text-slate-600 p-1">
+                                    <i class="fa-solid fa-xmark"></i>
+                                </button>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            {% endwith %}
+
+            <!-- CONTEÚDO DA PÁGINA -->
+            {% block content %}{% endblock %}
+        </main>
+    </div>
+
+    <!-- MODAL DE CONFIRMAÇÃO DE EXCLUSÃO (GENÉRICO) -->
+    <div id="modal_confirmacao_exclusao" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200 animate-in fade-in zoom-in duration-150">
+            <div class="flex items-center gap-3 text-red-600 mb-3">
+                <div class="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center">
+                    <i class="fa-solid fa-triangle-exclamation text-lg"></i>
+                </div>
+                <h3 class="text-lg font-bold text-slate-800">Confirmar Exclusão</h3>
+            </div>
+            <p id="modal_mensagem_exclusao" class="text-sm text-slate-600 mb-6">
+                Tem certeza que deseja excluir este registro? Esta operação não pode ser revertida.
+            </p>
+            <div class="flex items-center justify-end gap-3">
+                <button type="button" onclick="fecharModalExclusao()" class="px-4 py-2 rounded-xl text-slate-700 bg-slate-100 hover:bg-slate-200 text-sm font-semibold transition">
+                    Cancelar
+                </button>
+                <button type="button" id="btn_confirmar_exclusao" class="px-4 py-2 rounded-xl text-white bg-red-600 hover:bg-red-700 text-sm font-semibold shadow transition">
+                    Sim, Excluir
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- SCRIPTS GERAIS -->
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    {% block extra_scripts %}{% endblock %}
+</body>
+</html>
+

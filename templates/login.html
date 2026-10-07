@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - AgroGestão Pecuária</title>
+    
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        agro: {
+                            dark: '#0e2e20',
+                            primary: '#1b4d3e',
+                            emerald: '#2d6a4f'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/custom.css') }}">
+</head>
+<body class="bg-gradient-to-br from-agro-dark via-[#133e2c] to-slate-900 min-h-screen flex items-center justify-center p-4 antialiased text-slate-800">
+
+    <div class="max-w-md w-full">
+        
+        <!-- CARD PRINCIPAL DE LOGIN -->
+        <div class="bg-white/95 backdrop-blur-md rounded-3xl p-8 shadow-2xl border border-white/20">
+            
+            <!-- LOGO E IDENTIDADE VISUAL -->
+            <div class="text-center mb-8">
+                <div class="w-16 h-16 rounded-2xl bg-gradient-to-tr from-emerald-600 to-green-400 text-white flex items-center justify-center text-3xl mx-auto shadow-lg mb-3">
+                    <i class="fa-solid fa-cow"></i>
+                </div>
+                <h1 class="text-2xl font-black text-slate-900 tracking-tight">AgroGestão</h1>
+                <p class="text-xs text-emerald-700 font-semibold uppercase tracking-wider mt-0.5">
+                    Sistema de Controle Pecuário
+                </p>
+                <p class="text-xs text-slate-400 mt-2">
+                    Área restrita de gestão da fazenda
+                </p>
+            </div>
+
+            <!-- MENSAGENS FLASH (ERROS / AVISOS) -->
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    <div class="space-y-2 mb-6">
+                        {% for category, message in messages %}
+                            <div class="p-3.5 rounded-xl border text-xs font-semibold flex items-center gap-2.5
+                                {% if category == 'success' %} bg-emerald-50 border-emerald-200 text-emerald-800
+                                {% elif category == 'danger' or category == 'error' %} bg-red-50 border-red-200 text-red-800
+                                {% else %} bg-slate-50 border-slate-200 text-slate-800 {% endif %}">
+                                <i class="fa-solid {% if category == 'success' %}fa-circle-check text-emerald-600{% elif category == 'danger' %}fa-triangle-exclamation text-red-600{% else %}fa-circle-info text-slate-500{% endif %}"></i>
+                                <span>{{ message }}</span>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            {% endwith %}
+
+            <!-- FORMULÁRIO DE LOGIN -->
+            <form method="POST" action="{{ url_for('auth.login') }}" data-loading-feedback class="space-y-5">
+                
+                <!-- Campo Usuário -->
+                <div>
+                    <label for="usuario" class="block text-xs font-bold text-slate-700 mb-1.5">
+                        Usuário de Acesso
+                    </label>
+                    <div class="relative">
+                        <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                            <i class="fa-solid fa-user text-xs"></i>
+                        </div>
+                        <input type="text" id="usuario" name="usuario" required autofocus
+                               placeholder="Digite seu usuário..."
+                               class="w-full pl-10 pr-3.5 py-3 text-xs rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-slate-50/60 font-semibold text-slate-800 transition">
+                    </div>
+                </div>
+
+                <!-- Campo Senha -->
+                <div>
+                    <label for="senha" class="block text-xs font-bold text-slate-700 mb-1.5">
+                        Senha
+                    </label>
+                    <div class="relative">
+                        <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                            <i class="fa-solid fa-lock text-xs"></i>
+                        </div>
+                        <input type="password" id="senha" name="senha" required
+                               placeholder="Digite sua senha..."
+                               class="w-full pl-10 pr-10 py-3 text-xs rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-slate-50/60 font-semibold text-slate-800 transition">
+                        <button type="button" onclick="toggleSenha()" class="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-slate-600">
+                            <i id="icone_olho" class="fa-regular fa-eye text-xs"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Botão de Entrar -->
+                <button type="submit" class="w-full mt-2 bg-emerald-700 hover:bg-emerald-800 text-white py-3 px-4 rounded-xl text-xs font-bold shadow-lg shadow-emerald-900/20 transition duration-150 flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-right-to-bracket"></i>
+                    <span>Entrar no Sistema</span>
+                </button>
+
+            </form>
+
+            <!-- AVISO DE ACESSO EXCLUSIVO (SEM OPÇÃO DE CADASTRO) -->
+            <div class="mt-6 pt-5 border-t border-slate-100 text-center">
+                <span class="inline-flex items-center gap-1.5 text-[11px] font-medium text-slate-400 bg-slate-50 px-3 py-1.5 rounded-full border border-slate-100">
+                    <i class="fa-solid fa-shield-halved text-emerald-600"></i>
+                    Acesso Exclusivo &bull; Cadastros externos desativados
+                </span>
+            </div>
+
+        </div>
+
+        <!-- RODAPÉ -->
+        <p class="text-center text-[11px] text-emerald-300/60 mt-6 font-medium">
+            AgroGestão Pecuária &bull; Fazenda Modelo
+        </p>
+
+    </div>
+
+    <!-- SCRIPT DE MOSTRAR/OCULTAR SENHA -->
+    <script>
+        function toggleSenha() {
+            const campo = document.getElementById('senha');
+            const icone = document.getElementById('icone_olho');
+            if (campo.type === 'password') {
+                campo.type = 'text';
+                icone.classList.remove('fa-eye');
+                icone.classList.add('fa-eye-slash');
+            } else {
+                campo.type = 'password';
+                icone.classList.remove('fa-eye-slash');
+                icone.classList.add('fa-eye');
+            }
+        }
+    </script>
+</body>
+</html>
+
